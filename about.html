@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Podatki o migracijah</title>
+    <style>
+      .chart {
+        font: 10px sans-serif;
+        shape-rendering: crispEdges;
+        margin-top: 20px;
+      }
+
+      .chart div {
+        text-align: right;
+        padding: 3px;
+        margin: 1px;
+        color: white;
+      }
+
+      .chart rect {
+        stroke: white;
+      }
+      
+      .barleft {
+        fill: #9d261d;
+      }
+      
+      .barright {
+        fill: #46a546;
+      }
+
+      .chart text.bar.right {
+        fill: white;
+      }
+      
+      .chart text.bar.left {
+        fill: black;
+      }
+      
+      .chart text.bar_index {
+        fill: #666;
+      }
+      
+      .result {
+        font-weight: bold;
+      }
+      
+      .graph.nav {
+        margin-bottom: 0;
+        margin-top: 20px;
+      }
+      
+      #main {
+        text-align: center;
+        margin-top: 60px;
+      }
+      
+      text {
+        font: 10px sans-serif;
+      }
+
+      .dot {
+        stroke: #000;
+      }
+
+      .axis path, .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+      }
+
+      .label {
+        fill: #777;
+      }
+      
+      #forchart {
+        height: 730px;
+      }
+      
+      #circle circle {
+        fill: none;
+        pointer-events: all;
+      }
+
+      svg {
+        font: 10px sans-serif;
+      }
+
+      .group path {
+        fill-opacity: .5;
+      }
+
+      path.chord {
+        stroke: #000;
+        stroke-width: .25px;
+      }
+
+      #circle:hover path.fade {
+        display: none;
+      }
+        #main .row .span12, .hero-unit{
+          text-align: left;
+        }
+    </style>
+    <link href="css/bootstrap.css" rel="stylesheet">
+    </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+          <div class="navbar-inner">
+            <div class="container">
+              <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </a>
+              <a class="brand" href="index.html">Podatki o migracijah</a>
+              <div class="nav-collapse">
+                <ul class="nav">
+                  <li><a href="index.html">Preseljevanje v številkah</a></li>
+                  <li><a href="chart.html">Preseljevanje v povezavi z BDP</a></li>
+                  <li><a href="chord.html">Preseljevanje v Evropi</a></li>
+                  <li class="active"><a href="about.html">O strani</a></li>
+                </ul>
+              </div><!--/.nav-collapse -->
+            </div>
+          </div>
+        </div>
+      
+      <div id="main" class="container">
+        
+        <div class="hero-unit">
+            <p>
+              Ta spletna stran je bila narejena kot zaključni projekt pri predmetu Odkrivanje zakonitosti iz podatkov na <a target="_blank" href="http://www.fri.uni-lj.si/">Fakulteti za računalništvo in informatiko</a>.
+            </p>
+            <p>
+              Narejena je s pomočjo <a target="_blank" href="http://twitter.github.com/bootstrap/index.html">Bootstrap</a>-a in knjižnice za risanje grafov <a href="http://d3js.org/" target="_blank">d3.js</a>.
+            </p>
+            <p>
+              Podatki o migracijah so dobljeni iz <a href="http://www.migrationdrc.org/research/typesofmigration/global_migrant_origin_database.html" target="_blank">Global Migrant Origin Database</a>,
+              podatki o populaciji iz <a href="http://www.abundanttech.com/WebServices/Population/Population.asmx" target="_blank">U.S. Census Bureau</a>,
+              podatki o BDP iz <a href="http://data.worldbank.org/indicator/NY.GDP.PCAP.CD" target="_blank">The World Bank</a> in <a href="http://www.wolframalpha.com/" target="_blank">WolframAlpha</a>.
+            <p>Lahko mi pošljete <a href="mailto:matevz.mihalic@gmail.com">mail</a> ali pa mi sledite na <a target="_blank" href="http://twitter.com/matevzmihalic">@matevzmihalic</a>.
+          </div>
+    </div>
+  </body>
+</html>
