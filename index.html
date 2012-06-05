@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Podatki o migracijah</title>
+    <style>
+      .chart {
+        font: 10px sans-serif;
+        shape-rendering: crispEdges;
+        margin-top: 20px;
+      }
+
+      .chart div {
+        text-align: right;
+        padding: 3px;
+        margin: 1px;
+        color: white;
+      }
+
+      .chart rect {
+        stroke: white;
+      }
+      
+      .barleft {
+        fill: #9d261d;
+      }
+      
+      .barright {
+        fill: #46a546;
+      }
+
+      .chart text.bar.right {
+        fill: white;
+      }
+      
+      .chart text.bar.left {
+        fill: black;
+      }
+      
+      .chart text.bar_index {
+        fill: #666;
+      }
+      
+      .result {
+        font-weight: bold;
+      }
+      
+      .graph.nav {
+        margin-bottom: 0;
+        margin-top: 20px;
+      }
+      
+      #main {
+        text-align: center;
+        margin-top: 60px;
+      }
+      
+      #main .row .span12{
+        text-align: left;
+      }
+    </style>
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <script src="d3.v2.min.js"></script>
+    <script src="data.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+          <div class="navbar-inner">
+            <div class="container">
+              <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </a>
+              <a class="brand" href="index.html">Podatki o migracijah</a>
+              <div class="nav-collapse">
+                <ul class="nav">
+                  <li class="active"><a href="index.html">Preseljevanje v številkah</a></li>
+                  <li><a href="chart.html">Preseljevanje v povezavi z BDP</a></li>
+                  <li><a href="chord.html">Preseljevanje v Evropi</a></li>
+                  <li><a href="about.html">O strani</a></li>
+                </ul>
+              </div><!--/.nav-collapse -->
+            </div>
+          </div>
+        </div>
+      
+      <div id="main" class="container">
+        <div class="row">
+          <div class="span6">
+            <ul class="graph nav nav-pills">
+              <li class="active">
+                <a href="#1">Odseljeni</a>
+              </li>
+              <li><a href="#2">Priseljeni</a></li>
+              <li><a href="#3">Razlika</a></li>
+            </ul>
+          </div>
+          <div class="span3">
+            <label for="number">Število prikazanih</label>
+            <select id="number" name="number">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="-1">vse</option>
+            </select>
+          </div>
+          <div class="span3">
+            <label for="country">Izpostavljena država</label>
+            <select id="country" name="country">
+            </select>
+          </div>
+        </div>
+        
+        <div id="forchart"></div>
+<script type='text/javascript'>
+
+$(function() {
+  for (x in countries) {
+    $("#country").append('<option value="' + countries[x] + '" ' + ((countries[x]=='Slovenia') ? 'selected="selected"' : '') + '>' + countries[x] + '</option>');
+  }
+});
+
+var w = 600,
+    h = 15,
+    slicen = 5,
+    searchFor = "Slovenia",
+    graphType = 1,
+    initialdata,
+    data,
+    
+    x,
+    y;
+
+$(".graph.nav a").click(function() {
+  $(".graph.nav .active").removeClass("active");
+  $(this).parent().addClass("active");
+  
+  graphType = parseInt($(this).attr("href").replace("#", ""));
+  redraw();
+});
+
+$("#number").change(function() {
+  if ($(this).val() == '-1') {
+    slicen = -1;
+  } else {
+    slicen = parseInt($(this).val())/2;
+  }
+  redraw();
+});
+
+$("#country").change(function() {
+  searchFor = $(this).val();
+  redraw();
+});
+
+function updateData() {
+  if (graphType==1)
+    initialdata = dataodseljeni;
+  else if (graphType==2)
+    initialdata = datapriseljeni;
+  else if (graphType==3)
+    initialdata = datarazlika;
+    
+  if (slicen == -1) {
+    data = initialdata;
+  } else {
+    data = initialdata.slice(0, slicen);
+    data.push({"name": "...", "index": -1, "value": 0.0001});
+    data.push({"name": "...", "index": -1, "value": 0.0002});
+    data = data.concat(initialdata.slice(initialdata.length-slicen, initialdata.length));
+
+    if (searchFor) {
+      var index = -1;
+      for (x in data) {
+        if(data[x].name == searchFor) {
+          index = x;
+          break;
+        }
+      }
+      if (index == -1) {
+        for (x in initialdata) {
+          if(initialdata[x].name == searchFor) {
+            index = x;
+            break;
+          }
+        }
+        data.splice(slicen+2, 0, initialdata[index], {"name": "...", "index": -1, "value": 0.0003}, {"name": "...", "index": -1, "value": 0.0004});
+      }
+    }
+  }
+  
+  var min = 0,
+      max = 0
+      ydomain = new Array();
+
+  for (x in data) {
+    if (data[x].value < min)
+      min = data[x].value;
+    if (data[x].value > max)
+      max = data[x].value
+    ydomain.push(data[x].value);
+  }
+  
+  x = d3.scale.linear()
+      .domain([min, max])
+      .range(["0px", w + "px"]);
+
+  y = d3.scale.ordinal()
+      .domain(ydomain)
+      .rangeBands([0, h * data.length - 1]);
+}
+
+function redraw() {
+  updateData();
+  
+  d3.select("svg").remove();
+  
+  var chart = d3.select("#forchart").append("svg")
+      .attr("class", "chart")
+    .append("g")
+      .attr("transform", "translate(80,15)");
+
+   d3.select("#forchart").attr("width", w+200)
+      .attr("height", (h * data.length + 30));
+  
+  d3.select("svg").attr("width", w+200)
+      .attr("height", (h * data.length + 30));
+  
+  chart.attr("width", w+200)
+      .attr("height", (h * data.length + 30));
+
+  chart.selectAll("line")
+      .data(x.ticks(10))
+    .enter().append("line")
+      .attr("x1", x)
+      .attr("x2", x)
+      .attr("y1", 0)
+      .attr("y2", h * data.length - 1)
+      .style("stroke", "#eee");
+
+  chart.selectAll(".rule")
+      .data(x.ticks(10))
+    .enter().append("text")
+      .attr("x", x)
+      .attr("y", 0)
+      .attr("dy", -3)
+      .attr("text-anchor", "middle")
+      .text(String);
+
+  function tf(str) {
+    return parseFloat(str.replace('px', ''));
+  }
+
+  chart.selectAll("rect")
+      .data(data)
+    .enter().append("rect")
+      .attr("y", function(d) { return y(d.value) })
+      .attr("width", function(d) {
+        if (tf(x(d.value))<tf(x(0))) {
+          return tf(x(0))-tf(x(d.value));
+        } else {
+          return tf(x(d.value))-tf(x(0));
+        }
+      })
+      .attr("x", function(d) {
+        if (tf(x(d.value))<tf(x(0))) {
+          return tf(x(d.value));
+        } else {
+          return x(0);
+        }
+      })
+      .attr("class", function(d) { return (tf(x(d.value))<tf(x(0))) ? "barleft" : "barright"})
+      .attr("height", y.rangeBand());
+
+  chart.selectAll(".bar")
+      .data(data)
+    .enter().append("text")
+      .attr("class", function(d) {
+        var width;
+        if (tf(x(d.value))<tf(x(0))) {
+          width = tf(x(0))-tf(x(d.value));
+        } else {
+          width = tf(x(d.value))-tf(x(0));
+        }
+        return (width<40) ? "bar left" : "bar right";
+      })
+      .classed("result", function(d) { return d.name==searchFor })
+      .attr("x", function(d) { 
+        var width;
+        if (tf(x(d.value))<tf(x(0))) {
+          width = tf(x(0))-tf(x(d.value));
+        } else {
+          width = tf(x(d.value))-tf(x(0));
+        }
+        return (width<40) ? x(0) : x(d.value);
+      })
+      .attr("y", function(d) { return y(d.value) + y.rangeBand() / 2; })
+      .attr("dx", function(d) { return (tf(x(d.value))<tf(x(0))) ? 3 : -3})
+      .attr("dy", ".35em")
+      .attr("text-anchor", function(d) { return (tf(x(d.value))<tf(x(0))) ? "start" : "end"})
+      .text(function(d) { return (d.index == -1) ? "..." : String(d.value.toFixed(2)) + "%"});
+
+  chart.selectAll(".bar_number")
+      .data(data)
+    .enter().append("text")
+      .attr("class", "bar_number")
+      .classed("result", function(d) { return d.name==searchFor })
+      .attr("x", function(d) { return x(d.value) })
+      .attr("y", function(d) { return y(d.value) + y.rangeBand() / 2; })
+      .attr("dx", function(d) { return (tf(x(d.value))<tf(x(0))) ? -3 : 3})
+      .attr("dy", ".35em")
+      .attr("text-anchor", function(d) { return (tf(x(d.value))<tf(x(0))) ? "end" : "start"})
+      .text(function(d) { return d.name });
+
+  chart.selectAll(".bar_index")
+      .data(data)
+    .enter().append("text")
+      .attr("class", "bar_index")
+      .classed("result", function(d) { return d.name==searchFor })
+      .attr("x", -80)
+      .attr("y", function(d) { return y(d.value) + y.rangeBand() / 2; })
+      .attr("dy", ".35em")
+      .attr("text-anchor", "start")
+      .text(function(d) { return (d.index == -1) ? "..." : (d.index+1) + "." });
+
+  chart.append("line")
+      .attr("class", "blackline")
+      .attr("x1", x(0))
+      .attr("x2", x(0))
+      .attr("y1", 0)
+      .attr("y2", h * data.length - 1)
+      .style("stroke", "#000");
+  
+  
+}
+redraw();
+</script>
+    <div class="row">
+      <div class="span12">
+        <p>
+          Na temu grafu lahko prikažemo 3 stvari:
+          <ul>
+            <li>Kolikšen delež prebivalcev se je izselil iz države</li>
+            <li>Kolikšen delež prebivalcev v državi je priseljencev</li>
+            <li>Razika med deležom priseljenih in odseljenih prebivalcev</li>
+          </ul>
+        </p>
+        <p>
+          Na grafu se da spreminjati število prikazanih držav in izpostavljeno državo, ki je prikazana odebeljeno.
+        </p>
+        <p>
+          Podatki o odseljenih prebivalcih presegajo 100% zato, ker so sešteti skozi vsa leta.
+          Države z veliko odseljevanja so največkrat majhi otoki.
+          Slovenija je pri odseljevanju na 114. mestu, kar pomeni, da se je  5,45% Slovencev odselilo iz Slovenije.
+        </p>
+        <p>
+          Če pogledamo na graf priseljenih, lahko vidimo, da imajo majhen države veliko priseljencev.
+          Slovenija je na 99. mestu z 2,55% priseljencev.
+        </p>
+        <p>
+          V grafu razlika je prikazana razlika med deležom priseljenih in odseljenih ljudi. Negativna številka pomeni, da se več ljudi izseli, kot priseli.
+          Zanimiva država je Monaco, ki je med priseljenemi na predzadnjem mestu, na grafu razlike pa šele na 186. mestu. To pomeni, da se populacija Monaca zelo spreminja.
+          Slovenija je na tem grafu na 93. mestu, kar pomeni, da je za 2,90% več izselitev kot priselitev.
+        </p>
+        
+      </div>
+    </div>
+    </div>
+  </body>
+</html>

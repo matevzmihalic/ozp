@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Podatki o migracijah</title>
+    <style>
+      .chart {
+        font: 10px sans-serif;
+        shape-rendering: crispEdges;
+        margin-top: 20px;
+      }
+
+      .chart div {
+        text-align: right;
+        padding: 3px;
+        margin: 1px;
+        color: white;
+      }
+
+      .chart rect {
+        stroke: white;
+      }
+      
+      .barleft {
+        fill: #9d261d;
+      }
+      
+      .barright {
+        fill: #46a546;
+      }
+
+      .chart text.bar.right {
+        fill: white;
+      }
+      
+      .chart text.bar.left {
+        fill: black;
+      }
+      
+      .chart text.bar_index {
+        fill: #666;
+      }
+      
+      .result {
+        font-weight: bold;
+      }
+      
+      .graph.nav {
+        margin-bottom: 0;
+        margin-top: 20px;
+      }
+      
+      #main {
+        text-align: center;
+        margin-top: 60px;
+      }
+      
+      text {
+        font: 10px sans-serif;
+      }
+
+      .dot {
+        stroke: #000;
+      }
+
+      .axis path, .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+      }
+
+      .label {
+        fill: #777;
+      }
+      
+      #forchart {
+        height: 730px;
+      }
+      
+      #circle circle {
+        fill: none;
+        pointer-events: all;
+      }
+
+      svg {
+        font: 10px sans-serif;
+      }
+
+      .group path {
+        fill-opacity: .5;
+      }
+
+      path.chord {
+        stroke: #000;
+        stroke-width: .25px;
+      }
+
+      #circle:hover path.fade {
+        display: none;
+      }
+        #main .row .span12{
+          text-align: left;
+        }
+    </style>
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <script src="d3.v2.min.js"></script>
+    <script src="data.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script src="js/bootstrap-tooltip.js"></script>
+    <script src="js/bootstrap-popover.js"></script>
+    </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+          <div class="navbar-inner">
+            <div class="container">
+              <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </a>
+              <a class="brand" href="index.html">Podatki o migracijah</a>
+              <div class="nav-collapse">
+                <ul class="nav">
+                  <li><a href="index.html">Preseljevanje v številkah</a></li>
+                  <li><a href="chart.html">Preseljevanje v povezavi z BDP</a></li>
+                  <li class="active"><a href="chord.html">Preseljevanje v Evropi</a></li>
+                  <li><a href="about.html">O strani</a></li>
+                </ul>
+              </div><!--/.nav-collapse -->
+            </div>
+          </div>
+        </div>
+      
+      <div id="main" class="container">
+        
+        <div id="forchart"></div>
+        <script>
+
+        var width = 720,
+            height = 720,
+            outerRadius = Math.min(width, height) / 2 - 10,
+            innerRadius = outerRadius - 24;
+
+        var formatPercent = d3.format(".1%");
+
+        var arc = d3.svg.arc()
+            .innerRadius(innerRadius)
+            .outerRadius(outerRadius);
+
+        var layout = d3.layout.chord()
+            .padding(.04)
+            .sortSubgroups(d3.descending)
+            .sortChords(d3.ascending);
+
+        var path = d3.svg.chord()
+            .radius(innerRadius);
+
+        var svg = d3.select("#forchart").append("svg")
+            .attr("width", width)
+            .attr("height", height)
+          .append("g")
+            .attr("id", "circle")
+            .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+        svg.append("circle")
+            .attr("r", outerRadius);
+
+        d3.csv("cities.csv", function(cities) {
+          d3.json("matrix.json", function(matrix) {
+
+            // Compute the chord layout.
+            layout.matrix(matrix);
+
+            // Add a group per neighborhood.
+            var group = svg.selectAll(".group")
+                .data(layout.groups)
+              .enter().append("g")
+                .attr("class", "group")
+                .on("mouseover", mouseover)
+                .attr("data-title", function(d, i) { return cities[i].name; });
+                //.attr("data-content", function(d) { return formatPercent(d.value) + " of origins"; });
+
+            // Add a mouseover title.
+            /*
+            group.append("title").text(function(d, i) {
+              return cities[i].name + ": " + formatPercent(d.value) + " of origins";
+            });
+            */
+
+            // Add the group arc.
+            var groupPath = group.append("path")
+                .attr("id", function(d, i) { return "group" + i; })
+                .attr("d", arc)
+                .style("fill", function(d, i) { return cities[i].color; });
+
+            // Add a text label.
+            var groupText = group.append("text")
+                .attr("x", 6)
+                .attr("dy", 15);
+
+            groupText.append("textPath")
+                .attr("xlink:href", function(d, i) { return "#group" + i; })
+                .text(function(d, i) { return cities[i].name; });
+
+            // Remove the labels that don't fit. :(
+            groupText.filter(function(d, i) { return groupPath[0][i].getTotalLength() / 2 - 16 < this.getComputedTextLength(); })
+                .remove();
+
+            // Add the chords.
+            var chord = svg.selectAll(".chord")
+                .data(layout.chords)
+              .enter().append("path")
+                .attr("class", "chord")
+                .style("fill", function(d) { return cities[d.source.index].color; })
+                .attr("d", path);
+                //.attr("data-title", function(d) { return cities[d.source.index].name + " → " + cities[d.target.index].name + ": " + formatPercent(d.source.value); })
+                //.attr("data-content", function(d) { return cities[d.target.index].name + " → " + cities[d.source.index].name + ": " + formatPercent(d.target.value); });
+
+            
+            // Add an elaborate mouseover title for each chod.
+            chord.append("title").text(function(d) {
+              return cities[d.source.index].name
+                  + " → " + cities[d.target.index].name
+                  + ": " + formatPercent(d.source.value)
+                  + "\n" + cities[d.target.index].name
+                  + " → " + cities[d.source.index].name
+                  + ": " + formatPercent(d.target.value);
+            });
+            
+            
+
+            function mouseover(d, i) {
+              $('path#group' + i).parent().popover('toggle');
+              chord.classed("fade", function(p) {
+                return p.source.index != i
+                    && p.target.index != i;
+              });
+            }
+            //$('.chord').popover();
+          });
+        });
+        
+        
+
+        </script>
+        <div class="row">
+          <div class="span12">
+            <p>
+              Naredil sem graf preseljevanj med evropskimi narodi. Ko je bil graf že narejen sem ugotovil, da bi bilo bolje, če bi število držav (in povezav) omejil še malo bolj, ker je pri takem številu vizualizacija že dokaj nepregledna in počasna. 
+            </p>
+            <p>
+              Če zapeljete miško na povezavo se pokažejo podatki o procentih preseljevanja. Normalizirani so glede na populacijo države v katero se ljudje selijo.
+            </p>
+            <p>
+              Države so pobarvane glede na <a target="_blank" href="http://en.wikipedia.org/wiki/File:Europe_subregion_map_world_factbook.svg">regionalno združevanje</a>.
+              Barva povezave pa je odvisna od smeri povezave. Primer: povezava Germany → United kingdom je rumene barve (kot je pobarvana Nemčija), ker se iz Nemčije v Združeno kraljestvo preseli več ljudi kot obratno.
+            </p>
+            <p>
+              Opazil sem, da je večina povezav enosmernih.
+            </p>
+          </div>
+        </div>
+    </div>
+  </body>
+</html>

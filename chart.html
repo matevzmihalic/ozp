@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Podatki o migracijah</title>
+    <style>
+      .chart {
+        font: 10px sans-serif;
+        shape-rendering: crispEdges;
+        margin-top: 20px;
+      }
+
+      .chart div {
+        text-align: right;
+        padding: 3px;
+        margin: 1px;
+        color: white;
+      }
+
+      .chart rect {
+        stroke: white;
+      }
+      
+      .barleft {
+        fill: #9d261d;
+      }
+      
+      .barright {
+        fill: #46a546;
+      }
+
+      .chart text.bar.right {
+        fill: white;
+      }
+      
+      .chart text.bar.left {
+        fill: black;
+      }
+      
+      .chart text.bar_index {
+        fill: #666;
+      }
+      
+      .result {
+        font-weight: bold;
+      }
+      
+      .graph.nav {
+        margin-bottom: 0;
+        margin-top: 20px;
+      }
+      
+      #main {
+        text-align: center;
+        margin-top: 60px;
+      }
+      
+      text {
+        font: 10px sans-serif;
+      }
+
+      .dot {
+        stroke: #000;
+      }
+
+      .axis path, .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+      }
+
+      .label {
+        fill: #777;
+      }
+      
+      #forchart {
+        height: 506px;
+      }
+      #main .row .span12{
+        text-align: left;
+      }
+      
+    </style>
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <script src="d3.v2.min.js"></script>
+    <script src="data.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script src="js/bootstrap-tooltip.js"></script>
+    <script src="js/bootstrap-popover.js"></script>
+    </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+          <div class="navbar-inner">
+            <div class="container">
+              <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </a>
+              <a class="brand" href="index.html">Podatki o migracijah</a>
+              <div class="nav-collapse">
+                <ul class="nav">
+                  <li><a href="index.html">Preseljevanje v številkah</a></li>
+                  <li class="active"><a href="chart.html">Preseljevanje v povezavi z BDP</a></li>
+                  <li><a href="chord.html">Preseljevanje v Evropi</a></li>
+                  <li><a href="about.html">O strani</a></li>
+                </ul>
+              </div><!--/.nav-collapse -->
+            </div>
+          </div>
+        </div>
+      
+      <div id="main" class="container">
+        
+        <div id="forchart"></div>
+        <script type='text/javascript'>
+          // Various accessors that specify the four dimensions of data to visualize.
+          function x(d) { return d.GDP; }
+          function y(d) { return d.value; }
+          function radius(d) { return d.population; }
+          function color(d) { return d.continent; }
+          function key(d) { return d.name; }
+          
+          function addCommas(nStr)
+          {
+          	nStr += '';
+          	x = nStr.split('.');
+          	x1 = x[0];
+          	x2 = x.length > 1 ? '.' + x[1] : '';
+          	var rgx = /(\d+)(\d{3})/;
+          	while (rgx.test(x1)) {
+          		x1 = x1.replace(rgx, '$1' + '.' + '$2');
+          	}
+          	return x1 + x2;
+          }
+
+          // Chart dimensions.
+          var margin = {top: 19.5, right: 19.5, bottom: 100, left: 39.5},
+              width = 960 - margin.right,
+              height = 500 - margin.top - margin.bottom;
+
+          // Various scales. These domains make assumptions of data, naturally.
+          var xScale = d3.scale.log().domain([100, 2e5]).range([0, width]),
+              yScale = d3.scale.linear().domain([0, 100]).range([height, 0]),
+              radiusScale = d3.scale.sqrt().domain([0, 5e8]).range([3, 40]),
+              colorScale = d3.scale.category10();
+
+          // The x & y axes.
+          var xAxis = d3.svg.axis().orient("bottom").scale(xScale).ticks(12, d3.format(",d")),
+              yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+          // Create the SVG container and set the origin.
+          var svg = d3.select("#forchart").append("svg")
+              .attr("width", width + margin.left + margin.right)
+              .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+              .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+          
+          // Add the y-axis.
+          svg.append("g")
+              .attr("class", "y axis")
+              .call(yAxis);
+
+          // Add an x-axis label.
+          svg.append("text")
+              .attr("class", "x label")
+              .attr("text-anchor", "end")
+              .attr("x", width)
+              .attr("y", height - 6)
+              .text("BDP na osebo");
+
+          // Add a y-axis label.
+          svg.append("text")
+              .attr("class", "y label")
+              .attr("text-anchor", "end")
+              .attr("y", 6)
+              .attr("dy", ".75em")
+              .attr("transform", "rotate(-90)")
+              .text("delež priseljencev v državi");
+        
+          var dot = svg.append("g")
+                .attr("class", "dots")
+              .selectAll(".dot")
+                .data(datapriseljeni)
+              .enter().append("circle")
+                .attr("class", "dot")
+                .style("fill", function(d) { return colorScale(color(d)); })
+                .call(position)
+                .sort(order)
+                .attr("data-title", key)
+                .attr("data-content", function(d) { return "BPD na osebo: " + d.GDP.toFixed(2) + "$<br \>Delež priseljencev: " + d.value.toFixed(2) + "%<br />Število prebivalcev: " + addCommas(d.population) });
+            
+            // Positions the dots based on data.
+              function position(dot) {
+                dot .attr("cx", function(d) { return xScale(x(d)); })
+                    .attr("cy", function(d) { return yScale(y(d)); })
+                    .attr("r", function(d) { return radiusScale(radius(d)); });
+              }
+
+              // Defines a sort order so that the smallest dots are drawn on top.
+              function order(a, b) {
+                return radius(b) - radius(a);
+              }
+            
+            // Add the x-axis.
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis);
+                
+            $('.dot').popover();
+        </script>
+        
+        <div class="row">
+          <div class="span12">
+            <p>
+              Velikost pik predstavlja število prebivalcev, barva predstavlja geografsko lokacijo, položaj na x osi pove BDP na prebivalca in položaj na y osi pove delež priseljenih ljudi v državi.
+            </p>
+            <p>
+              Prva stvar, ki se opazi je, da so države z veliko priseljenci majhne.
+              
+            </p>
+            <p>
+              Opazi pa se tudi, da večji kot je BDP, več je v državi priseljencev. Med državavami, ki imajo BDP na osebo manj kot 5000$ skoraj ni države, ki bi imela več kot 10% priseljencev.
+              Med tem ko je v ostalih državah veliko takih, ki imajo delež priseljencev na 10%.
+          </div>
+        </div>
+    </div>
+  </body>
+</html>
